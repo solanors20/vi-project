@@ -22,6 +22,21 @@ import Divider from '@mui/material/Divider';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { useState } from 'react';
+import Popover from '@mui/material/Popover';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import ArrowCircleUpIcon from '@mui/icons-material/ArrowCircleUp';
+import ArrowCircleDownIcon from '@mui/icons-material/ArrowCircleDown';
+import { pink } from '@mui/material/colors';
+
+function createData(name, treatmentValue, controlValue, percentageDifference) {
+  return { name, treatmentValue, controlValue, percentageDifference };
+}
 
 const data = [
   {quarter: 1, earnings: 13000},
@@ -39,6 +54,30 @@ const Item = styled(Paper)(({ theme }) => ({
 }));
 
 function App() {
+  const [filter, setFilter] = useState("todas");
+  const [anchorEl, setAnchorEl] = useState(null);
+
+  const handleChange = ev => {
+    setFilter(ev.target.value);
+    console.log(filter);
+  };
+  const handleClickMetric = event => {
+    setAnchorEl(event.currentTarget);
+    console.log(event.target);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const rows = [
+    createData('Banner - Clicks totales', 200, 150, 25),
+    createData('Banner - Click por usuario', 1.5, 0.8, 37),
+    createData('Banner - Ganancia', 1000, 990, -0.1),
+  ];
+
+  const open = Boolean(anchorEl);
+  const id = open ? 'simple-popover' : undefined;
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <div className="App">
@@ -60,7 +99,58 @@ function App() {
       <Divider />
       <Grid container spacing={2}>
         <Grid item xs={6} md={8} >
-          <Item><div className='app-background'>test</div></Item>
+          <Item>
+            <div className='app-background'>
+              <div className='nav-metric'>Metrica</div>
+              <div className='banner-metric' onClick={handleClickMetric}>Metrica</div>
+              <div className='deals-metric'>Metrica</div>
+            </div>
+            <Popover
+              id={id}
+              open={open}
+              anchorEl={anchorEl}
+              onClose={handleClose}
+              anchorOrigin={{
+                vertical: 'center',
+                horizontal: 'center',
+              }}
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'center',
+              }}
+            >
+              <TableContainer component={Paper}>
+                <Table sx={{ minWidth: 650 }} aria-label="simple table">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Métrica</TableCell>
+                      <TableCell align="right">Grupo experimental</TableCell>
+                      <TableCell align="right">Grupo de control</TableCell>
+                      <TableCell align="right">Delta</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {rows.map((row) => (
+                      <TableRow
+                        key={row.name}
+                        sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                      >
+                        <TableCell component="th" scope="row">
+                          {row.name}
+                        </TableCell>
+                        <TableCell align="right">{row.treatmentValue}</TableCell>
+                        <TableCell align="right">{row.controlValue}</TableCell>
+                        <TableCell align="right">{row.percentageDifference}</TableCell>
+                        <TableCell align="right">
+                          {row.percentageDifference > 0 ? <ArrowCircleUpIcon color="success"/> : <ArrowCircleDownIcon sx={{ color: pink[500] }}/>}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Popover>
+          </Item>
         </Grid>
         <Grid item xs={6} md={4}>
           <Item>
@@ -76,8 +166,9 @@ function App() {
                 <AccordionDetails>
                   <RadioGroup
                       aria-labelledby="demo-radio-buttons-group-label"
-                      defaultValue="female"
+                      defaultValue="todas"
                       name="radio-buttons-group"
+                      onChange={handleChange} value={filter}
                     >
                     <FormControlLabel value="todas" control={<Radio />} label="Todas las métricas" />
                     <FormControlLabel value="stat-sig" control={<Radio />} label="Estadísticamente significativo" />
