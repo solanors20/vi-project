@@ -1,5 +1,5 @@
 import './App.css';
-import { VictoryBar, VictoryChart } from 'victory';
+import { VictoryBoxPlot, VictoryChart } from 'victory';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
@@ -33,6 +33,8 @@ import TableRow from '@mui/material/TableRow';
 import ArrowCircleUpIcon from '@mui/icons-material/ArrowCircleUp';
 import ArrowCircleDownIcon from '@mui/icons-material/ArrowCircleDown';
 import { pink } from '@mui/material/colors';
+import PreviewIcon from '@mui/icons-material/Preview';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 function createData(name, treatmentValue, controlValue, percentageDifference) {
   return { name, treatmentValue, controlValue, percentageDifference };
@@ -56,6 +58,7 @@ const Item = styled(Paper)(({ theme }) => ({
 function App() {
   const [filter, setFilter] = useState("todas");
   const [anchorEl, setAnchorEl] = useState(null);
+  const [showChart, setShowChart] = useState(false);
 
   const handleChange = ev => {
     setFilter(ev.target.value);
@@ -64,6 +67,10 @@ function App() {
   const handleClickMetric = event => {
     setAnchorEl(event.currentTarget);
     console.log(event.target);
+  };
+
+  const handleClickOnPreview = event => {
+    setShowChart(!showChart)
   };
 
   const handleClose = () => {
@@ -101,9 +108,9 @@ function App() {
         <Grid item xs={6} md={8} >
           <Item>
             <div className='app-background'>
-              <div className='nav-metric'>Metrica</div>
-              <div className='banner-metric' onClick={handleClickMetric}>Metrica</div>
-              <div className='deals-metric'>Metrica</div>
+              <div className='nav-metric'></div>
+              <div className='banner-metric' onClick={handleClickMetric}></div>
+              <div className='deals-metric'></div>
             </div>
             <Popover
               id={id}
@@ -119,14 +126,17 @@ function App() {
                 horizontal: 'center',
               }}
             >
+              {showChart ? 
               <TableContainer component={Paper}>
                 <Table sx={{ minWidth: 650 }} aria-label="simple table">
                   <TableHead>
                     <TableRow>
+                      <TableCell></TableCell>
                       <TableCell>Métrica</TableCell>
                       <TableCell align="right">Grupo experimental</TableCell>
                       <TableCell align="right">Grupo de control</TableCell>
                       <TableCell align="right">Delta</TableCell>
+                      <TableCell align="right">Gráfico de bigotes</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -135,20 +145,41 @@ function App() {
                         key={row.name}
                         sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                       >
+                        <TableCell align="right">
+                          {row.percentageDifference > 0 ? <ArrowCircleUpIcon color="success"/> : <ArrowCircleDownIcon sx={{ color: pink[500] }}/>}
+                        </TableCell>
                         <TableCell component="th" scope="row">
                           {row.name}
                         </TableCell>
                         <TableCell align="right">{row.treatmentValue}</TableCell>
                         <TableCell align="right">{row.controlValue}</TableCell>
-                        <TableCell align="right">{row.percentageDifference}</TableCell>
+                        <TableCell align="right">{row.percentageDifference}%</TableCell>
                         <TableCell align="right">
-                          {row.percentageDifference > 0 ? <ArrowCircleUpIcon color="success"/> : <ArrowCircleDownIcon sx={{ color: pink[500] }}/>}
+                        <IconButton id={row.name} aria-label="Ver grafico" onClick={handleClickOnPreview}>
+                          <PreviewIcon />
+                        </IconButton>
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </TableContainer>
+              :
+              <div>
+                <IconButton onClick={handleClickOnPreview}>
+                  <ArrowBackIcon />
+                </IconButton>
+                <VictoryChart domainPadding={20}>
+                  <VictoryBoxPlot
+                    boxWidth={20}
+                    data={[
+                      { x: 1, y: [1, 2, 3, 5] },
+                      { x: 2, y: [3, 2, 8, 10] }
+                    ]}
+                  />
+                </VictoryChart>
+              </div>
+              }
             </Popover>
           </Item>
         </Grid>
@@ -196,13 +227,6 @@ function App() {
           </Item>
         </Grid>
       </Grid>
-      <VictoryChart>
-        <VictoryBar
-          data={data}
-          x="quarter"
-          y="earnings"
-        />
-      </VictoryChart>
     </Box>
     </div>
     </LocalizationProvider>
