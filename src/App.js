@@ -22,7 +22,7 @@ import Divider from '@mui/material/Divider';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Popover from '@mui/material/Popover';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -41,10 +41,14 @@ function createData(name, treatmentValue, controlValue, percentageDifference) {
 }
 
 const data = [
-  {quarter: 1, earnings: 13000},
-  {quarter: 2, earnings: 16500},
-  {quarter: 3, earnings: 14250},
-  {quarter: 4, earnings: 19000}
+  {user_id: 1, group: "control", value: 8, metric: "Deals clicks"},
+  {user_id: 1, group: "control", value: 1, metric: "Deals clicks"},
+  {user_id: 1, group: "control", value: 2, metric: "Deals clicks"},
+  {user_id: 1, group: "control", value: 5, metric: "Deals clicks"},
+  {user_id: 1, group: "treatment", value: 6, metric: "Deals clicks"},
+  {user_id: 1, group: "treatment", value: 23, metric: "Deals clicks"},
+  {user_id: 1, group: "treatment", value: 12, metric: "Deals clicks"},
+  {user_id: 1, group: "treatment", value: 14, metric: "Deals clicks"},
 ];
 
 const Item = styled(Paper)(({ theme }) => ({
@@ -60,12 +64,32 @@ function App() {
   const [anchorEl, setAnchorEl] = useState(null);
   const [showChart, setShowChart] = useState(false);
 
+  const [showStatSig, setShowStatSig] = useState(true);
+  const [showNoStatSig, setShowNoStatSig] = useState(true);
+
+  const [showNavMetric, setShowNavMetric] = useState(false);
+  const [showBannerMetric, setBannerMetric] = useState(false);
+  const [showDealsMetric, setShowDealsMetric] = useState(false);
+  const [showPageViewsMetric, setShowPageViewsMetric] = useState(false);
+  const [showRevenueMetric, setShowRevenueMetric] = useState(false);
+
+  const [showBannerTable, setShowBannerTable] = useState(false);
+  const [showDealsTable, setShowDealsTable] = useState(false);
+
   const handleChange = ev => {
     setFilter(ev.target.value);
     console.log(filter);
   };
   const handleClickMetric = event => {
     setAnchorEl(event.currentTarget);
+    if(event.currentTarget.id == "banner-metric") {
+      setShowBannerTable(true);
+      setShowDealsTable(false);
+    }
+    if(event.currentTarget.id == "deals-metric") {
+      setShowBannerTable(false);
+      setShowDealsTable(true);
+    }
     console.log(event.target);
   };
 
@@ -77,11 +101,54 @@ function App() {
     setAnchorEl(null);
   };
 
-  const rows = [
-    createData('Banner - Clicks totales', 200, 150, 25),
-    createData('Banner - Click por usuario', 1.5, 0.8, 37),
-    createData('Banner - Ganancia', 1000, 990, -0.1),
+  const handleFilter = (event) => {
+    const { value } = event.target;
+    if(value === "stat-sig") {
+      setShowStatSig(true);
+      setShowNoStatSig(false);
+    } else if(value === "no-stat-sig") {
+      setShowStatSig(false);
+      setShowNoStatSig(true);
+    } else {
+      setShowStatSig(true);
+      setShowNoStatSig(true);
+    }
+  };
+
+  const showMetric = (event) => {
+    // event.preventDefault();
+    const { value } = event.target;
+    if("Deals" === value) {
+      setShowDealsMetric(!showDealsMetric)
+    }
+    if("Banner" === value) {
+      setBannerMetric(!showBannerMetric)
+    }
+    if("Navegation" === value) {
+      setShowNavMetric(!showNavMetric)
+    }
+    if("PageViews" === value) {
+      setShowPageViewsMetric(!showPageViewsMetric)
+    }
+    if("Revenue" === value) {
+      setShowRevenueMetric(!showRevenueMetric)
+    }
+  };
+
+  const rowsBanner = [
+    createData('Clicks en banner', 9, 7, 22.2),
   ];
+
+  const rowsDeals = [
+    createData('Clicks en deals', 8, 9, -11.11),
+  ];
+
+  const rows = () => {
+    if(showBannerTable) {
+      return rowsBanner;
+    }
+    return rowsDeals;
+  }
 
   const open = Boolean(anchorEl);
   const id = open ? 'simple-popover' : undefined;
@@ -108,9 +175,9 @@ function App() {
         <Grid item xs={6} md={8} >
           <Item>
             <div className='app-background'>
-              <div className='nav-metric'></div>
-              <div className='banner-metric' onClick={handleClickMetric}></div>
-              <div className='deals-metric'></div>
+              <div className={ showNavMetric ? 'nav-metric active' : 'nav-metric' } id="nav-metric" onClick={handleClickMetric}></div>
+              <div className={ showBannerMetric ? 'banner-metric active' : 'banner-metric'} id="banner-metric" onClick={handleClickMetric} ></div>
+              <div className={ showDealsMetric ? 'deals-metric active-neg' : 'deals-metric'} id="deals-metric" onClick={handleClickMetric}></div>
             </div>
             <Popover
               id={id}
@@ -136,11 +203,11 @@ function App() {
                       <TableCell align="right">Grupo experimental</TableCell>
                       <TableCell align="right">Grupo de control</TableCell>
                       <TableCell align="right">Delta</TableCell>
-                      <TableCell align="right">Gráfico de bigotes</TableCell>
+                      <TableCell align="right">Box plot</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {rows.map((row) => (
+                    {rows().map((row) => (
                       <TableRow
                         key={row.name}
                         sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
@@ -169,12 +236,18 @@ function App() {
                 <IconButton onClick={handleClickOnPreview}>
                   <ArrowBackIcon />
                 </IconButton>
-                <VictoryChart domainPadding={20}>
+                <VictoryChart domainPadding={40}>
                   <VictoryBoxPlot
-                    boxWidth={20}
-                    data={[
-                      { x: 1, y: [1, 2, 3, 5] },
-                      { x: 2, y: [3, 2, 8, 10] }
+                    boxWidth={40}
+                    categories={{ x: ["Experimental", "Control"] }}
+                    data={
+                      showBannerTable ? [
+                      { x: 1, y: [9,9,9,9.1,9.9,9.1,9.9,9.1,8.6,9.9] },
+                      { x: 2, y: [7,7.2,7.5,7,7,6,8.5] }
+                    ]
+                    : [
+                      { x: 1, y: [8,8,8,8.1,8.9,8.1,8.9,8.1,8.6,7.9] },
+                      { x: 2, y: [9,9.2,9.5,9,9,9.6,9.5] }
                     ]}
                   />
                 </VictoryChart>
@@ -201,9 +274,9 @@ function App() {
                       name="radio-buttons-group"
                       onChange={handleChange} value={filter}
                     >
-                    <FormControlLabel value="todas" control={<Radio />} label="Todas las métricas" />
-                    <FormControlLabel value="stat-sig" control={<Radio />} label="Estadísticamente significativo" />
-                    <FormControlLabel value="no-stat-sig" control={<Radio />} label="No es estadísticamente significativo" />
+                    <FormControlLabel control={<Radio value="todas" onChange={(event) => handleFilter(event)}/>} label="Todas las métricas" />
+                    <FormControlLabel control={<Radio value="stat-sig" onChange={(event) => handleFilter(event)}/>} label="Estadísticamente significativo" />
+                    <FormControlLabel control={<Radio value="no-stat-sig" onChange={(event) => handleFilter(event)}/>} label="No es estadísticamente significativo" />
                   </RadioGroup>
                 </AccordionDetails>
               </Accordion>
@@ -216,10 +289,17 @@ function App() {
                   <Typography>Métricas</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
-                  <FormGroup>
-                    <FormControlLabel control={<Checkbox defaultChecked />} label="Clicks por usuario" />
-                    <FormControlLabel control={<Checkbox defaultChecked />} label="Retención de usuarios" />
-                    <FormControlLabel control={<Checkbox defaultChecked />} label="Ganancia" />
+                  <FormGroup >
+                    { showStatSig ? <FormControlLabel control={<Checkbox onChange={(event) => showMetric(event)} value={"Navegation"}/>} label="Clicks en navegación" /> : <></>}
+                    { showStatSig ? <FormControlLabel control={<Checkbox onChange={(event) => showMetric(event)} value={"Banner"}/>} label="Clicks en banner" /> : <></>}
+                    { showStatSig ? <FormControlLabel control={<Checkbox onChange={(event) => showMetric(event)} value={"Deals"}/>} label="Clicks en deals" /> : <></>}
+                    { showStatSig ? <FormControlLabel control={<Checkbox onChange={(event) => showMetric(event)} value={"PageViews"}/>} label="Vistas" /> : <></>}
+                    { showStatSig ? <FormControlLabel control={<Checkbox onChange={(event) => showMetric(event)} value={"Revenue"}/>} label="Revenue" /> : <></>}
+                    { showNoStatSig ? <FormControlLabel control={<Checkbox onChange={(event) => showMetric(event)} value={"Navegation"}/>} label="Errores" /> : <></>}
+                    { showNoStatSig ? <FormControlLabel control={<Checkbox onChange={(event) => showMetric(event)} value={"Banner"}/>} label="Retención de usuarios" /> : <></>}
+                    { showNoStatSig ? <FormControlLabel control={<Checkbox onChange={(event) => showMetric(event)} value={"Deals"}/>} label="Clicks en footer" /> : <></>}
+                    { showNoStatSig ? <FormControlLabel control={<Checkbox onChange={(event) => showMetric(event)} value={"PageViews"}/>} label="Usuarios activos diarios" /> : <></>}
+                    { showNoStatSig ? <FormControlLabel control={<Checkbox onChange={(event) => showMetric(event)} value={"Revenue"}/>} label="Usuarios activos semanales" /> : <></>}
                   </FormGroup>
                 </AccordionDetails>
               </Accordion>
